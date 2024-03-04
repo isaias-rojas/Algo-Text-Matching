@@ -4,6 +4,9 @@ import java.io.IOException;
 
 public class TextSimilarityChecker {
 
+    private static final int SIMILARITY_THRESHOLD = 55;
+    private static final int MIN_WORD_LENGTH_FOR_LEVENSHTEIN = 3;
+
     public static String readFile(String filePath) throws IOException {
         StringBuilder content = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
@@ -23,27 +26,24 @@ public class TextSimilarityChecker {
 
         for (int i = 1; i <= words1.length; i++) {
             for (int j = 1; j <= words2.length; j++) {
-                if (words1[i - 1].equalsIgnoreCase(words2[j - 1])) {
-                    dp[i][j] = dp[i - 1][j - 1] + 1;
-                } else {
-                    int levenshteinDistance = calculateLevenshteinDistance(words1[i - 1].toLowerCase(), words2[j - 1].toLowerCase());
-                    if (levenshteinDistance >= 55) {
-                        dp[i][j] = dp[i - 1][j - 1] + 1;
-                    } else {
-                        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-                    }
-                }
+                dp[i][j] = calculateCommonWords(dp, words1, words2, i, j);
             }
         }
 
-        int maxLen = Math.max(words1.length, words2.length);
         int commonWords = dp[words1.length][words2.length];
-        int nonMatchingWords = Math.max(words1.length - commonWords, words2.length - commonWords);
-        System.out.println("non matching words:" + nonMatchingWords);
-        System.out.println("common words: " + commonWords);
         return (double) (commonWords * 100) / words2.length;
     }
 
+    private static int calculateCommonWords(int[][] dp, String[] words1, String[] words2, int i, int j) {
+        if (words1[i - 1].equalsIgnoreCase(words2[j - 1])) {
+            return dp[i - 1][j - 1] + 1;
+        } else if (words1[i - 1].length() > words2[j - 1].length() &&
+                calculateLevenshteinDistance(words1[i - 1].toLowerCase(), words2[j - 1].toLowerCase()) >= SIMILARITY_THRESHOLD) {
+            return dp[i - 1][j - 1] + 1;
+        } else {
+            return Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+    }
 
     public static void identifyMisspelledWords(String text1, String text2) {
         String[] sentences1 = text1.split("\\.\\s*");
@@ -52,7 +52,7 @@ public class TextSimilarityChecker {
         for (String sentence2 : sentences2) {
             for (String sentence1 : sentences1) {
                 double similarity = calculateSimilarity(sentence1, sentence2);
-                if (similarity >= 55) {
+                if (similarity >= SIMILARITY_THRESHOLD) {
                     identifyWords(sentence1, sentence2);
                     break;
                 }
@@ -69,13 +69,16 @@ public class TextSimilarityChecker {
                 if (word1.equalsIgnoreCase(word2)) {
                     break;
                 }
-                if (calculateLevenshteinDistance(word1.toLowerCase(), word2.toLowerCase()) >= 55) {
+                // Check if the second word is longer than a threshold before calculating Levenshtein distance
+                if (word2.length() > MIN_WORD_LENGTH_FOR_LEVENSHTEIN &&
+                        calculateLevenshteinDistance(word1.toLowerCase(), word2.toLowerCase()) >= SIMILARITY_THRESHOLD) {
                     System.out.println(word2 + " - " + word1);
                     break;
                 }
             }
         }
     }
+
 
     private static int calculateLevenshteinDistance(String word1, String word2) {
         int[][] dp = new int[word1.length() + 1][word2.length() + 1];
@@ -106,7 +109,7 @@ public class TextSimilarityChecker {
 
             identifyMisspelledWords(text1, text2);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Error reading files: " + e.getMessage());
         }
     }
 }
