@@ -86,7 +86,7 @@ public class TextSimilarityChecker {
             String text1 = readFile("/home/isaverse/IdeaProjects/ProjectAlgoI/file1.txt");
             String text2 = readFile("/home/isaverse/IdeaProjects/ProjectAlgoI/file2.txt");
 
-            double similarityPercentage = calculateSimilarity(text1, text2);
+            double similarityPercentage = calculateSimilarity(text2, text1);
             System.out.println("Similarity Percentage: " + similarityPercentage + "%");
 
             identifyMisspelledWords(text1, text2);
